@@ -43,8 +43,9 @@ class AwsS3Utils {
 
 	//TODO: don't use keys here in plain text
 	//TODO: refactor to single method for generating both types of URLs?
-	String accessKey = "AKIA6C2QODNAYNWBMHOH"
-	String secretKey = "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"
+	@Value('${aws.access.key}') String accessKey
+	@Value('${aws.secret.key}') String secretKey
+	
 
 	public URL generateUrlToPutObject(String bucketName, String objectKey) {
 		URL url
