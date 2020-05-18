@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:camel="http://camel.apache.org/schema/spring" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:solr="http://www.springframework.org/schema/data/solr"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+						http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+						http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+						http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+						http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
+      					http://www.springframework.org/schema/data/solr http://www.springframework.org/schema/data/solr/spring-solr.xsd">
+
+	<aop:config proxy-target-class="true" />
+
+	<context:component-scan base-package="aws.asset.controller" />
+
+	<task:annotation-driven executor="pocExecutor" />
+	<task:executor id="pocExecutor" pool-size="10-20"
+		queue-capacity="200" keep-alive="300" rejection-policy="CALLER_RUNS" />
+
+	<mvc:resources mapping="/resources/**" location="/resources" />
+
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<property name="favorPathExtension" value="true" />
+		<property name="favorParameter" value="true" />
+		<property name="defaultContentType" value="application/json;charset=utf-8" />
+		<property name="mediaTypes">
+			<value>
+				json=application/json
+			</value>
+		</property>
+	</bean>
+
+	<bean id="objectMapper"
+		class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"
+		p:indentOutput="true" p:simpleDateFormat="yyyy-MM-dd'T'HH:mm:ss:SSSZ" />
+
+	<bean
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean"
+		p:targetObject-ref="objectMapper" p:targetMethod="registerModule">
+		<property name="arguments">
+			<list>
+				<bean class="com.fasterxml.jackson.datatype.joda.JodaModule" />
+			</list>
+		</property>
+	</bean>
+
+	<mvc:annotation-driven
+		content-negotiation-manager="contentNegotiationManager">
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter" />
+			<bean
+				class="org.springframework.http.converter.ResourceHttpMessageConverter" />
+			<bean
+				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="objectMapper" ref="objectMapper" />
+			</bean>
+		</mvc:message-converters>
+		<mvc:argument-resolvers>
+			<bean
+				class="org.springframework.data.web.PageableHandlerMethodArgumentResolver" />
+		</mvc:argument-resolvers>
+	</mvc:annotation-driven>
+
+	<mvc:default-servlet-handler/>
+	
+	<!-- Services -->
+	<bean id="uploadAssetService" class="aws.asset.service.asset.UploadAssetServiceImpl" />
+	<!-- Utils -->
+	<bean id="awsS3Utils" class="aws.asset.util.AwsS3Utils" />
+</beans>
